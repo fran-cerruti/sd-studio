@@ -1,0 +1,64 @@
+# SD-Studio .gitignore
+
+# Old/deprecated files
+old/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Models (large files)
+models/
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.bin
+
+# Generated outputs
+outputs/
+outputs_batch/
+*.png
+*.jpg
+*.jpeg
+!frontend/favicon.ico
+
+# Logs and data
+*.log
+*.jsonl
+generation_logs.jsonl
+saved_prompts.json
+
+# Environment variables
+.env
+.env.local
+
+# System files
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
