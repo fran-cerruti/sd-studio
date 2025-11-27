@@ -679,6 +679,10 @@ if __name__ == "__main__":
     import uvicorn
     import socket
     
+    # Configuración del servidor
+    HOST = "0.0.0.0"
+    PORT = 8080
+    
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)
     
@@ -687,12 +691,12 @@ if __name__ == "__main__":
     print("="*80)
     print(f"📁 Outputs: {OUTPUTS_DIR.resolve()}")
     print(f"\n🌐 Acceso local:")
-    print(f"   http://localhost:8000")
-    print(f"   http://127.0.0.1:8000")
+    print(f"   http://localhost:{PORT}")
+    print(f"   http://127.0.0.1:{PORT}")
     print(f"\n🌐 Acceso desde red:")
-    print(f"   http://{local_ip}:8000")
+    print(f"   http://{local_ip}:{PORT}")
     print(f"\n📚 Documentación:")
-    print(f"   http://localhost:8000/docs")
+    print(f"   http://localhost:{PORT}/docs")
     print(f"\n✨ Features:")
     print(f"   • Generación simple")
     print(f"   • Generación batch con variaciones")
@@ -702,4 +706,4 @@ if __name__ == "__main__":
     print("="*80)
     print("\nPresiona Ctrl+C para detener\n")
     
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    uvicorn.run(app, host=HOST, port=PORT)
