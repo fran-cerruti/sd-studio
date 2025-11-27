@@ -9,7 +9,32 @@ const { createApp } = Vue;
 const utils = {
     countTokens(text) {
         if (!text) return 0;
-        return text.split(/[\s,]+/).filter(t => t.length > 0).length;
+        
+        // Aproximación mejorada del tokenizador CLIP
+        // Basado en análisis de comportamiento real del tokenizador
+        
+        // 1. Contar palabras base (split por espacios y comas)
+        let words = text.split(/[\s,]+/).filter(t => t.length > 0);
+        let tokenCount = words.length;
+        
+        // 2. Ajustar por palabras compuestas largas
+        // Palabras >10 caracteres suelen dividirse en múltiples tokens
+        words.forEach(word => {
+            if (word.length > 10) {
+                // Aproximación: +0.5 tokens por cada 10 caracteres adicionales
+                tokenCount += Math.floor((word.length - 10) / 10) * 0.5;
+            }
+        });
+        
+        // 3. Contar números y caracteres especiales
+        const numbers = text.match(/\d+/g) || [];
+        tokenCount += numbers.length * 0.3; // Números suelen ser tokens separados
+        
+        // 4. Agregar tokens especiales [BOS] y [EOS]
+        tokenCount += 2;
+        
+        // 5. Redondear hacia arriba (ser conservador)
+        return Math.ceil(tokenCount);
     },
     
     getTokenClass(count) {

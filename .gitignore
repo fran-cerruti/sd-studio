@@ -1,5 +1,8 @@
 # SD-Studio .gitignore
 
+# Setup backups
+.setup_backup/
+
 # Old/deprecated files
 old/
 
