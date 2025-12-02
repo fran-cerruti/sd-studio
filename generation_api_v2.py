@@ -25,7 +25,7 @@ import json
 from model_manager import ModelManager
 from batch_processor import BatchProcessor, BatchJobQueue
 from controlnet_manager import ControlNetManager
-from config import OUTPUTS_DIR, MODELS_CATALOG
+from config import OUTPUTS_DIR
 
 app = FastAPI(
     title="SD-Studio API",

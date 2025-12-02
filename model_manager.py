@@ -14,8 +14,8 @@ from diffusers import (
     EulerAncestralDiscreteScheduler
 )
 from config import (
-    MODELS_DIR, MODELS_CATALOG, GTX_1060_CONFIG, OPTIMIZATIONS, 
-    auto_detect_safetensors, NEGATIVE_PROMPTS
+    MODELS_DIR, get_models_catalog, GTX_1060_CONFIG, OPTIMIZATIONS, 
+    NEGATIVE_PROMPTS
 )
 
 
@@ -33,54 +33,34 @@ class ModelManager:
         }
     
     def get_model_info(self, model_id: str) -> Optional[Dict[str, Any]]:
-        """Obtiene información de un modelo por su ID (incluye auto-detectados)"""
+        """Obtiene información de un modelo por su ID (detección dinámica)"""
+        catalog = get_models_catalog()
+        
         # Buscar en catálogo local
-        for model in MODELS_CATALOG["local"]:
+        for model in catalog["local"]:
             if model["id"] == model_id:
                 return {"source": "local", **model}
         
         # Buscar en HuggingFace
-        for model in MODELS_CATALOG["huggingface"]:
+        for model in catalog["huggingface"]:
             if model["id"] == model_id:
                 return {"source": "huggingface", **model}
-        
-        # Buscar en auto-detectados
-        auto_detected = auto_detect_safetensors()
-        for model in auto_detected:
-            if model["id"] == model_id:
-                return {"source": "local", **model}
         
         return None
     
     def list_available_models(self) -> Dict[str, list]:
-        """Lista modelos disponibles (verifica existencia de locales + auto-detecta)"""
-        available_local = []
+        """Lista modelos disponibles (detección automática dinámica)"""
+        catalog = get_models_catalog()
         
-        # Modelos del catálogo
-        catalog_ids = set()
-        for model in MODELS_CATALOG["local"]:
-            model_path = MODELS_DIR / model["file"]
-            available_local.append({
-                **model,
-                "available": model_path.exists(),
-                "source": "local"
-            })
-            catalog_ids.add(model["id"])
+        # Todos los modelos detectados ya están disponibles
+        available_local = [
+            {**model, "available": True, "source": "local"}
+            for model in catalog["local"]
+        ]
         
-        # Auto-detectar modelos no catalogados
-        auto_detected = auto_detect_safetensors()
-        for model in auto_detected:
-            if model["id"] not in catalog_ids:
-                available_local.append({
-                    **model,
-                    "available": True,
-                    "source": "local"
-                })
-        
-        # HuggingFace asumimos disponibles (se descargan on-demand)
         available_hf = [
             {**model, "available": True, "source": "huggingface"}
-            for model in MODELS_CATALOG["huggingface"]
+            for model in catalog["huggingface"]
         ]
         
         return {

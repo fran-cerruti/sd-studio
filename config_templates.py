@@ -45,15 +45,109 @@ def auto_detect_safetensors():
     if MODELS_DIR.exists():
         for safetensor_file in MODELS_DIR.glob("*.safetensors"):
             model_id = safetensor_file.stem
+            # Inferir tipo basado en nombre
+            name_lower = model_id.lower()
+            if any(kw in name_lower for kw in ['toon', 'anime', 'pixel', 'cartoon', 'comic']):
+                model_type = "animation"
+                emoji = "🎨"
+            else:
+                model_type = "photorealistic"
+                emoji = "📸"
+            
             detected.append({{
                 "id": model_id,
                 "file": safetensor_file.name,
                 "name": model_id.replace("_", " ").title(),
-                "type": "general",
-                "description": "Auto-detected model",
-                "size_gb": safetensor_file.stat().st_size / (1024**3),
-                "emoji": "🎨"
+                "type": model_type,
+                "description": "Auto-detected local model",
+                "size_gb": round(safetensor_file.stat().st_size / (1024**3), 2),
+                "emoji": emoji
             }})
+    return detected
+
+def auto_detect_huggingface():
+    """
+    Auto-detecta SOLO modelos de Stable Diffusion descargados y completos
+    Detecta el variant correcto (fp16, bf16, etc.) leyendo los archivos
+    Filtra LLMs, ControlNet y otros modelos no-SD
+    """
+    detected = []
+    if not HUGGINGFACE_CACHE.exists():
+        return detected
+    
+    hub_dir = HUGGINGFACE_CACHE / "hub"
+    if not hub_dir.exists():
+        return detected
+    
+    for model_dir in hub_dir.glob("models--*"):
+        try:
+            # Buscar snapshot más reciente
+            snapshots_dir = model_dir / "snapshots"
+            if not snapshots_dir.exists():
+                continue
+            
+            # Obtener último snapshot (más reciente)
+            snapshots = sorted(snapshots_dir.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True)
+            if not snapshots:
+                continue
+            
+            snapshot = snapshots[0]
+            
+            # VERIFICAR QUE SEA UN MODELO SD (tiene model_index.json)
+            model_index = snapshot / "model_index.json"
+            if not model_index.exists():
+                continue  # No es un modelo SD, skip (puede ser LLM, ControlNet, etc.)
+            
+            # VERIFICAR QUE ESTÉ COMPLETO (tiene unet/)
+            unet_dir = snapshot / "unet"
+            if not unet_dir.exists():
+                continue  # Modelo incompleto o descarga a medias, skip
+            
+            # DETECTAR VARIANT leyendo archivos del unet
+            variant = None
+            for file in unet_dir.iterdir():
+                if file.is_symlink() or file.is_file():
+                    filename = file.name
+                    if filename.startswith("diffusion_pytorch_model"):
+                        # Extraer variant del nombre: diffusion_pytorch_model.fp16.safetensors
+                        if ".fp16." in filename:
+                            variant = "fp16"
+                        elif ".bf16." in filename:
+                            variant = "bf16"
+                        # Si no tiene variant, queda None (modelo full precision)
+                        break
+            
+            # Extraer repo (formato: models--user--model)
+            parts = model_dir.name.split("--")
+            if len(parts) >= 3:
+                user = parts[1]
+                model = "--".join(parts[2:])  # Por si el nombre tiene --
+                repo = f"{{user}}/{{model}}"
+                model_id = f"{{user}}_{{model}}".replace("-", "_")
+                
+                # Inferir tipo basado en nombre
+                name_lower = model.lower()
+                if any(kw in name_lower for kw in ['toon', 'anime', 'pixel', 'cartoon', 'comic']):
+                    model_type = "animation"
+                    emoji = "🎨"
+                else:
+                    model_type = "photorealistic"
+                    emoji = "📸"
+                
+                detected.append({{
+                    "id": model_id,
+                    "repo": repo,
+                    "name": model.replace("-", " ").replace("_", " ").title(),
+                    "type": model_type,
+                    "description": "Auto-detected HuggingFace model",
+                    "variant": variant,  # Detectado correctamente
+                    "size_gb": 0.0,
+                    "emoji": emoji
+                }})
+        except Exception as e:
+            # Si hay error con un modelo, continuar con el siguiente
+            continue
+    
     return detected
 
 # Configuración de hardware (auto-detectada por setup.py)
@@ -82,107 +176,16 @@ OPTIMIZATIONS = {{
     "requires_safety_checker": False
 }}
 
-# Catálogo unificado de modelos
-MODELS_CATALOG = {{
-    "local": [
-        {{
-            "id": "cyberrealistic_v90",
-            "file": "cyberrealistic_v90.safetensors",
-            "name": "CyberRealistic v9.0",
-            "type": "photorealistic",
-            "description": "Fotorealismo cyberpunk de alta calidad",
-            "size_gb": 2.0,
-            "emoji": "📸"
-        }},
-        {{
-            "id": "dreamshaper_8",
-            "file": "dreamshaper_8.safetensors",
-            "name": "DreamShaper 8",
-            "type": "photorealistic",
-            "description": "Versátil fotorealista, muy popular",
-            "size_gb": 2.0,
-            "emoji": "📸"
-        }},
-        {{
-            "id": "vision_v4",
-            "file": "vision_v4.safetensors",
-            "name": "Vision v4",
-            "type": "photorealistic",
-            "description": "Fotorealismo de alta calidad",
-            "size_gb": 2.0,
-            "emoji": "📸"
-        }},
-        {{
-            "id": "toonyou_beta6",
-            "file": "toonyou_beta6.safetensors",
-            "name": "ToonYou Beta 6",
-            "type": "animation",
-            "description": "Estilo anime/toon de alta calidad",
-            "size_gb": 2.2,
-            "emoji": "🎨"
-        }},
-        {{
-            "id": "dreamshaper_pixelart_v10",
-            "file": "dreamshaperPixelart_v10.safetensors",
-            "name": "DreamShaper Pixel Art v10",
-            "type": "animation",
-            "description": "Pixel art estilizado",
-            "size_gb": 2.0,
-            "emoji": "🎨"
-        }},
-        {{
-            "id": "pixnite_purepixel_v10",
-            "file": "pixnite15PurePixel_v10.safetensors",
-            "name": "Pixnite Pure Pixel v10",
-            "type": "animation",
-            "description": "Pixel art puro de alta calidad",
-            "size_gb": 2.0,
-            "emoji": "🎨"
-        }}
-    ],
-    "huggingface": [
-        {{
-            "id": "majicmix_v6",
-            "repo": "digiplay/majicMIX_realistic_v6",
-            "name": "majicMIX realistic v6",
-            "type": "photorealistic",
-            "description": "⭐ Fotorealismo de alta calidad (recomendado)",
-            "variant": "fp16",
-            "size_gb": 2.24,
-            "emoji": "📸"
-        }},
-        {{
-            "id": "urpm_v13",
-            "repo": "stablediffusionapi/urpm-v13",
-            "name": "URPM v1.3",
-            "type": "photorealistic",
-            "description": "Fotorealista merge de alta calidad",
-            "variant": None,
-            "size_gb": 4.5,
-            "emoji": "📸"
-        }},
-        {{
-            "id": "epicrealism",
-            "repo": "emilianJR/epiCRealism",
-            "name": "epiCRealism",
-            "type": "photorealistic",
-            "description": "Fotorealismo extremo de alta calidad",
-            "variant": None,
-            "size_gb": 4.0,
-            "emoji": "📸"
-        }},
-        {{
-            "id": "dreamshaper_hf",
-            "repo": "Lykon/DreamShaper-8",
-            "name": "DreamShaper 8 (HuggingFace)",
-            "type": "photorealistic",
-            "description": "Versátil fotorealista (versión HF)",
-            "variant": None,
-            "size_gb": 4.0,
-            "emoji": "📸"
-        }}
-    ]
-}}
+# Catálogo de modelos (auto-generado dinámicamente)
+def get_models_catalog():
+    """Genera catálogo de modelos detectando automáticamente locales y HuggingFace"""
+    return {{
+        "local": auto_detect_safetensors(),
+        "huggingface": auto_detect_huggingface()
+    }}
+
+# Para compatibilidad con código existente
+MODELS_CATALOG = get_models_catalog()
 
 # Negative prompts optimizados por tipo
 NEGATIVE_PROMPTS = {{
