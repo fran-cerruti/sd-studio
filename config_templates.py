@@ -34,9 +34,30 @@ Hardware detectado:
 from pathlib import Path
 import torch
 
-# Directorios
-MODELS_DIR = Path("../models")
-OUTPUTS_DIR = Path("../outputs")
+# Directorios con búsqueda inteligente
+def _find_or_create_dir(dir_name: str) -> Path:
+    """
+    Busca directorio en orden:
+    1. Dentro del proyecto (./dir_name)
+    2. Un nivel arriba (../dir_name)
+    3. Si no existe, lo crea dentro del proyecto
+    """
+    # Opción 1: Dentro del proyecto
+    local_dir = Path(__file__).parent / dir_name
+    if local_dir.exists():
+        return local_dir
+    
+    # Opción 2: Un nivel arriba (compartido)
+    parent_dir = Path(__file__).parent.parent / dir_name
+    if parent_dir.exists():
+        return parent_dir
+    
+    # Opción 3: Crear dentro del proyecto
+    local_dir.mkdir(parents=True, exist_ok=True)
+    return local_dir
+
+MODELS_DIR = _find_or_create_dir("models")
+OUTPUTS_DIR = _find_or_create_dir("outputs")
 HUGGINGFACE_CACHE = Path.home() / ".cache" / "huggingface"
 
 def auto_detect_safetensors():
