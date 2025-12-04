@@ -29,6 +29,7 @@ class ControlNetManager:
         self.controlnet_cache = {}
         self.current_pipeline = None
         self.current_controlnet_type = None
+        self.current_model_id = None  # Track del modelo usado en el pipeline
     
     def load_controlnet_pipeline(
         self,
@@ -48,16 +49,20 @@ class ControlNetManager:
         if controlnet_type not in CONTROLNET_MODELS:
             raise ValueError(f"ControlNet tipo '{controlnet_type}' no soportado")
         
-        # Si ya está cargado el mismo tipo
-        if not force_reload and self.current_controlnet_type == controlnet_type:
+        # Verificar que hay modelo SD cargado
+        if not self.model_manager.current_model["loaded"]:
+            raise RuntimeError("Debes cargar un modelo SD primero")
+        
+        current_model_id = self.model_manager.current_model["model_id"]
+        
+        # Si ya está cargado el mismo tipo Y el mismo modelo base
+        if (not force_reload and 
+            self.current_controlnet_type == controlnet_type and 
+            self.current_model_id == current_model_id):
             return {
                 "success": True,
                 "message": f"ControlNet {controlnet_type} ya está cargado"
             }
-        
-        # Verificar que hay modelo SD cargado
-        if not self.model_manager.current_model["loaded"]:
-            raise RuntimeError("Debes cargar un modelo SD primero")
         
         # Limpiar pipeline anterior
         if self.current_pipeline:
@@ -89,6 +94,7 @@ class ControlNetManager:
         
         self.current_pipeline = pipe
         self.current_controlnet_type = controlnet_type
+        self.current_model_id = current_model_id  # Guardar el model_id usado
         
         return {
             "success": True,
@@ -364,6 +370,7 @@ class ControlNetManager:
         
         self.current_pipeline = None
         self.current_controlnet_type = None
+        self.current_model_id = None
         
         return {"success": True, "message": "ControlNet pipeline descargado"}
     
