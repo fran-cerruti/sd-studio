@@ -451,7 +451,7 @@ const BatchTab = {
                 v-model:prompt="prompt"
                 v-model:negative-prompt="negativePrompt"
                 :saved-prompts="savedPrompts"
-                @save="$emit('save-prompt', $event)"
+                @save-prompt="$emit('save-prompt', $event)"
             ></prompt-editor>
 
             <!-- Parameters -->
@@ -686,7 +686,7 @@ const ControlNetTab = {
                 v-model:prompt="prompt"
                 v-model:negative-prompt="negativePrompt"
                 :saved-prompts="savedPrompts"
-                @save="$emit('save-prompt', $event)"
+                @save-prompt="$emit('save-prompt', $event)"
             ></prompt-editor>
 
             <!-- Image Preview Grid -->
